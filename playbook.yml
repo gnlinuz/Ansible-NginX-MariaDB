@@ -1,0 +1,17 @@
+---
+- hosts: centos7
+  gather_facts: False
+  vars:
+    - domainName: www.linuxtestlaboratory.com
+    - webServer: 10.169.69.58  
+  become: true
+  roles:
+  - nginx
+
+- hosts: centos7
+  vars:
+    - mariadb_root_password: mariapass
+  become: true
+  roles:
+  - mariaDB
+

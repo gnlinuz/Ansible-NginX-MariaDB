@@ -1,0 +1,60 @@
+---
+- name: Install Nginx web server
+  package: pkg={{ item }} state=installed
+  with_items:
+  - nginx
+
+- name: Remove the default vhost file
+  file: path="/etc/nginx/sites-enabled/default" state=absent
+  notify: 
+  - restart nginx
+
+- name: Create default web site directory
+  file: path="/var/www/{{ domainName }}" state=directory mode=0755
+
+- name: Create main NginX config file 
+  template: src=../templates/nginx.conf dest=/etc/nginx/nginx.conf owner=root group=root mode=0644
+  notify:
+  - restart nginx
+
+- name: Check if folder sites-available already exists 
+  stat: path=/etc/nginx/sites-available
+  register: folder_check
+
+- name: Create the folder if does not exists 
+  file: path=/etc/nginx/sites-available state=directory mode=0755
+  when: folder_check.stat.exists == False
+
+- name: Create vhost file into /etc/nginx/sites-available directory 
+  template: src=../templates/website.conf dest=/etc/nginx/sites-available/{{ domainName }}.conf
+  notify:
+  - restart nginx
+
+- name: Create vhost file into /etc/nginx/conf.d directory 
+  template: src=../templates/website.conf dest=/etc/nginx/conf.d/{{ domainName }}.conf
+  notify:
+  - restart nginx
+
+- name: Check if folder sites-enabled already exists 
+  stat: path=/etc/nginx/sites-enabled
+  register: folder_enabled
+
+- name: Create the folder sites-enabled if does not exists 
+  file: path=/etc/nginx/sites-enabled state=directory mode=0755
+  when: folder_enabled.stat.exists == False
+    
+- name: Copy a sample web page for a domain
+  copy: src=../files/index1.html dest=/var/www/{{ domainName }}/index1.html
+  notify:
+  - restart nginx
+
+- name: Create symbolic link
+  file: src=/etc/nginx/sites-available/{{ domainName }}.conf dest=/etc/nginx/sites-enabled/{{ domainName }}.conf state=link
+  notify:
+  - restart nginx
+
+- name: Make sure that the service is ebabled at a boot time
+  service: name=nginx enabled=yes
+
+ 
+
